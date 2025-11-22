@@ -34,7 +34,7 @@ jobs:
           # Wait for server to be ready
           echo "Waiting for server to start..."
           for i in {1..30}; do
-            if curl -s http://localhost:8000/sse > /dev/null 2>&1; then
+            if curl -s --max-time 2 -I http://localhost:8000/sse 2>&1 | grep -q "200 OK"; then
               echo "Server is ready!"
               break
             fi
@@ -43,7 +43,7 @@ jobs:
           done
 
           # Verify server is running
-          if ! curl -s http://localhost:8000/sse > /dev/null 2>&1; then
+          if ! curl -s --max-time 2 -I http://localhost:8000/sse 2>&1 | grep -q "200 OK"; then
             echo "Failed to start MCP server"
             exit 1
           fi
