@@ -39,7 +39,7 @@ jobs:
           {
             "mcpServers": {
               "my-server": {
-                "transport": "sse",
+                "type": "sse",
                 "url": "http://localhost:8000/sse"
               }
             }

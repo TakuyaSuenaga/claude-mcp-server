@@ -44,14 +44,31 @@ Claude Code CLI内で以下のように実行できます：
 1. GitHubリポジトリのSettings > Secrets and variables > Actions に移動
 2. `ANTHROPIC_API_KEY` という名前でAnthropic APIキーを追加
 
-### ワークフローの実行
+### ワークフローの実行方法
 
-ワークフローは以下の場合に自動実行されます：
+ワークフローは以下の3つの方法で実行できます：
 
-- `main` ブランチへのpush
-- `main` ブランチへのPull Request
+#### 1. Pull Requestで自動実行
 
-手動で実行する場合：
+Pull Requestを作成または更新すると、自動的にMCPサーバーのテストが実行されます。
+
+```bash
+git checkout -b test-branch
+git add .
+git commit -m "Test MCP server"
+git push origin test-branch
+# GitHubでPull Requestを作成
+```
+
+#### 2. PRコメントで実行
+
+Pull Request内で `@claude` とメンションすると、ワークフローがトリガーされます。
+
+```
+@claude MCPサーバーをテストしてください
+```
+
+#### 3. 手動実行
 
 1. Actions タブに移動
 2. "Test MCP Server" ワークフローを選択
@@ -61,12 +78,19 @@ Claude Code CLI内で以下のように実行できます：
 
 1. リポジトリをチェックアウト
 2. Python環境のセットアップ
-3. MCPサーバーをバックグラウンドで起動
-4. Claude Code Actionを使用してサーバーをテスト
+3. MCP設定ファイル（`.mcp/config.json`）を作成
+4. MCPサーバーをバックグラウンドで起動
+5. Claude Code Actionを使用してサーバーをテスト
    - 基本的なテキストのエコーテスト
    - 特殊文字を含むテキストのテスト
    - 日本語と絵文字のテスト
-5. テスト完了後、サーバーをクリーンアップ
+6. テスト完了後、サーバーをクリーンアップ
+
+### 技術的な詳細
+
+- MCPサーバーの設定は `--mcp-config` フラグで渡されます
+- サーバーは `http://localhost:8000/sse` (SSEトランスポート) で起動します
+- 健全性チェックにより、サーバーが起動するまで最大30秒待機します
 
 ## プロジェクト構成
 
