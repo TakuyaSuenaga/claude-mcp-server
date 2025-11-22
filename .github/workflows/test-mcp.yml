@@ -1,0 +1,76 @@
+name: Test MCP Server
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  test-mcp:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: .python-version
+
+      - name: Start MCP Server
+        run: |
+          uv run --with mcp .github/scripts/server.py &
+          SERVER_PID=$!
+          echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
+
+          # Wait for server to be ready
+          echo "Waiting for server to start..."
+          for i in {1..30}; do
+            if curl -s http://localhost:8000/sse > /dev/null 2>&1; then
+              echo "Server is ready!"
+              break
+            fi
+            echo "Attempt $i: Server not ready yet..."
+            sleep 1
+          done
+
+          # Verify server is running
+          if ! curl -s http://localhost:8000/sse > /dev/null 2>&1; then
+            echo "Failed to start MCP server"
+            exit 1
+          fi
+
+      - name: Test MCP Server with Claude Code
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          mcp_servers: |
+            {
+              "my-server": {
+                "transport": "sse",
+                "url": "http://localhost:8000/sse"
+              }
+            }
+          prompt: |
+            MCPのmy-serverをテストしてください。以下のテストを実行してください：
+
+            1. 基本的なテキストのエコーテスト
+            2. 特殊文字を含むテキストのテスト
+            3. 日本語と絵文字のテスト
+
+            各テストの結果を報告してください。
+
+      - name: Cleanup
+        if: always()
+        run: |
+          if [ -n "$SERVER_PID" ]; then
+            kill $SERVER_PID || true
+          fi
