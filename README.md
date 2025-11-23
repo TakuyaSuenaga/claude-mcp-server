@@ -5,6 +5,7 @@ FastMCPを使用したシンプルなMCPサーバーのサンプルプロジェ�
 ## 機能
 
 - **Echo Tool**: 入力されたテキストをそのまま返すシンプルなツール
+- **S3 List Buckets Tool**: AWS S3のバケットリストを取得するツール（boto3を使用）
 
 ## ローカルでのテスト
 
@@ -41,8 +42,65 @@ Claude Code CLI内で以下のように実行できます：
 
 ### セットアップ
 
-1. GitHubリポジトリのSettings > Secrets and variables > Actions に移動
-2. `ANTHROPIC_API_KEY` という名前でAnthropic APIキーを追加
+#### 1. GitHub Secretsの設定
+
+GitHubリポジトリのSettings > Secrets and variables > Actions に移動し、以下のシークレットを追加：
+
+- `ANTHROPIC_API_KEY`: Anthropic APIキー
+- `AWS_ROLE_ARN`: GitHub Actions OIDC用のAWS IAMロールARN（例: `arn:aws:iam::123456789012:role/GitHubActionsRole`）
+
+#### 2. AWS OIDC設定
+
+AWS側でGitHub ActionsからのOIDC認証を設定する必要があります：
+
+1. **IAMアイデンティティプロバイダーを作成**:
+   - プロバイダータイプ: OpenID Connect
+   - プロバイダーURL: `https://token.actions.githubusercontent.com`
+   - オーディエンス: `sts.amazonaws.com`
+
+2. **IAMロールを作成**:
+   - 信頼されたエンティティタイプ: ウェブアイデンティティ
+   - アイデンティティプロバイダー: 上記で作成したGitHub Actions用プロバイダー
+   - オーディエンス: `sts.amazonaws.com`
+   - 信頼ポリシーの例:
+     ```json
+     {
+       "Version": "2012-10-17",
+       "Statement": [
+         {
+           "Effect": "Allow",
+           "Principal": {
+             "Federated": "arn:aws:iam::123456789012:oidc-provider/token.actions.githubusercontent.com"
+           },
+           "Action": "sts:AssumeRoleWithWebIdentity",
+           "Condition": {
+             "StringEquals": {
+               "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
+             },
+             "StringLike": {
+               "token.actions.githubusercontent.com:sub": "repo:YOUR_GITHUB_USERNAME/claude-mcp-server:*"
+             }
+           }
+         }
+       ]
+     }
+     ```
+
+3. **必要な権限をアタッチ**:
+   - S3バケットリスト取得のため、最低限 `s3:ListAllMyBuckets` 権限が必要
+   - ポリシー例:
+     ```json
+     {
+       "Version": "2012-10-17",
+       "Statement": [
+         {
+           "Effect": "Allow",
+           "Action": "s3:ListAllMyBuckets",
+           "Resource": "*"
+         }
+       ]
+     }
+     ```
 
 ### ワークフローの実行方法
 
@@ -77,20 +135,24 @@ Pull Request内で `@claude` とメンションすると、ワークフローが
 ### ワークフローの動作
 
 1. リポジトリをチェックアウト
-2. Python環境のセットアップ
-3. MCP設定ファイル（`.mcp/config.json`）を作成
-4. MCPサーバーをバックグラウンドで起動
-5. Claude Code Actionを使用してサーバーをテスト
+2. **AWS OIDC認証を実行** - GitHub ActionsがAWS IAMロールを引き受け
+3. Python環境のセットアップ
+4. MCP設定ファイル（`.mcp/config.json`）を作成
+5. MCPサーバーをバックグラウンドで起動（AWS認証情報を継承）
+6. Claude Code Actionを使用してサーバーをテスト
    - 基本的なテキストのエコーテスト
    - 特殊文字を含むテキストのテスト
    - 日本語と絵文字のテスト
-6. テスト完了後、サーバーをクリーンアップ
+   - **AWS S3バケットリストの取得テスト**
+7. テスト完了後、サーバーをクリーンアップ
 
 ### 技術的な詳細
 
 - MCPサーバーの設定は `--mcp-config` フラグで渡されます
 - サーバーは `http://localhost:8000/sse` (SSEトランスポート) で起動します
 - 健全性チェックにより、サーバーが起動するまで最大30秒待機します
+- AWS認証情報は環境変数として自動的にMCPサーバープロセスに渡されます
+- boto3は環境変数（`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SESSION_TOKEN`）から自動的に認証情報を取得します
 
 ## プロジェクト構成
 

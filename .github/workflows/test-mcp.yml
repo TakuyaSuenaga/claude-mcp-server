@@ -18,9 +18,22 @@ jobs:
        github.event.issue.pull_request &&
        contains(github.event.comment.body, '@claude'))
 
+    # AWS OIDC認証のための権限設定
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: write
+      issues: write
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Configure AWS credentials with OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ap-northeast-1
 
       - name: Install uv
         uses: astral-sh/setup-uv@v5
@@ -81,8 +94,10 @@ jobs:
             1. 基本的なテキストのエコーテスト（例: "Hello, World!"）
             2. 特殊文字を含むテキストのテスト（例: "@#$%^&*()"）
             3. 日本語と絵文字のテスト（例: "こんにちは🎉"）
+            4. AWS S3バケットリストの取得テスト（list_s3_bucketsツールを使用）
 
             各テストの結果を報告し、すべてが正常に動作していることを確認してください。
+            S3バケットリストについては、見つかったバケット数と名前を報告してください。
 
       - name: Cleanup
         if: always()
