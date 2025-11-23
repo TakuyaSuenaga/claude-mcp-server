@@ -45,20 +45,6 @@ jobs:
         with:
           python-version-file: .python-version
 
-      - name: Create MCP config
-        run: |
-          mkdir -p .mcp
-          cat > .mcp/config.json << 'EOF'
-          {
-            "mcpServers": {
-              "my-server": {
-                "type": "sse",
-                "url": "http://localhost:8000/sse"
-              }
-            }
-          }
-          EOF
-
       - name: Start MCP Server
         run: |
           uv run --with mcp .github/scripts/server.py &
@@ -87,8 +73,16 @@ jobs:
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          claude_args: "--mcp-config .mcp/config.json"
-          additional_permissions: |
+          mcp_config: |
+            {
+              "mcpServers": {
+                "my-server": {
+                  "type": "sse",
+                  "url": "http://localhost:8000/sse"
+                }
+              }
+            }
+          settings: |
             {
               "allowedTools": ["*"]
             }
