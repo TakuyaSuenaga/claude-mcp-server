@@ -76,6 +76,7 @@ jobs:
           show_full_output: true
           claude_args: |
             --allowed-tools "mcp__my-server"
+            --output-format text
           prompt: |
             MCPのmy-serverをテストしてください。以下のテストを実行してください：
 
