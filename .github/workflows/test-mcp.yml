@@ -87,7 +87,14 @@ jobs:
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          claude_args: "--mcp-config .mcp/config.json --auto-approve-mcp-tools"
+          claude_args: "--mcp-config .mcp/config.json"
+          settings: |
+            {
+              "allowedTools": [
+                "mcp__my-server__echo",
+                "mcp__my-server__list_s3_buckets"
+              ]
+            }
           prompt: |
             MCPのmy-serverをテストしてください。以下のテストを実行してください：
 
