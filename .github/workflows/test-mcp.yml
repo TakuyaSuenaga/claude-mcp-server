@@ -73,6 +73,7 @@ jobs:
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          show_full_output: true
           claude_args: |
             --allowed-tools "mcp__my-server"
           prompt: |
@@ -86,7 +87,12 @@ jobs:
             4. AWS S3バケットリストの取得テスト（list_s3_bucketsツールを使用）
 
             各テストの結果を報告し、すべてが正常に動作していることを確認してください。
-            S3バケットリストについては、見つかったバケット数と名前を報告してください。
+
+            **重要**: S3バケットリストについては、以下の情報を必ず含めて詳細に報告してください：
+            - 見つかったバケットの総数
+            - 各バケットの名前
+            - 各バケットの作成日時
+            - list_s3_bucketsツールから返された完全な結果
 
       - name: Cleanup
         if: always()
