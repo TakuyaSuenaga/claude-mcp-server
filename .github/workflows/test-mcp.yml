@@ -88,15 +88,14 @@ jobs:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
           claude_args: "--mcp-config .mcp/config.json"
-          settings: |
+          additional_permissions: |
             {
-              "allowedTools": [
-                "mcp__my-server__echo",
-                "mcp__my-server__list_s3_buckets"
-              ]
+              "allowedTools": ["*"]
             }
           prompt: |
             MCPのmy-serverをテストしてください。以下のテストを実行してください：
+
+            注意: MCPツールの実行許可を求められた場合は、すべて承認してください。
 
             1. 基本的なテキストのエコーテスト（例: "Hello, World!"）
             2. 特殊文字を含むテキストのテスト（例: "@#$%^&*()"）
